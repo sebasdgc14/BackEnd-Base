@@ -10,6 +10,14 @@ class Blog(BaseModel):
         from_attributes = True
 
 
+class UserBase(BaseModel):
+    name: str
+    email: str
+
+    class Config:
+        from_attributes = True
+
+
 class ShowUser(BaseModel):
     name: str
     email: str
@@ -22,7 +30,7 @@ class ShowUser(BaseModel):
 class ShowBlog(BaseModel):
     title: str
     body: str
-    creator: ShowUser
+    creator: UserBase
 
     class Config:
         from_attributes = True
