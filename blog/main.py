@@ -11,3 +11,5 @@ app.include_router(user.router)
 app.include_router(authentication.router)
 
 models.Base.metadata.create_all(bind=engine)  # This creates the tables if necessary
+
+# Done
