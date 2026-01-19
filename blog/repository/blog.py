@@ -21,8 +21,10 @@ def get_blog(id, db: Session = Depends(get_db)):
 
 
 # Create a blog
-def create(request: schemas.Blog, db: Session = Depends(get_db)):
-    new_blog = models.Blog(title=request.title, body=request.body, user_id=1)
+def create(request: schemas.Blog, current_user_id, db: Session = Depends(get_db)):
+    new_blog = models.Blog(
+        title=request.title, body=request.body, user_id=current_user_id
+    )
     db.add(new_blog)
     db.commit()
     db.refresh(new_blog)
@@ -30,21 +32,44 @@ def create(request: schemas.Blog, db: Session = Depends(get_db)):
 
 
 # Delete a blog
-def delete_blog(id, db: Session = Depends(get_db)):
-    db.query(models.Blog).filter(models.Blog.id == id).delete(synchronize_session=False)
-    db.commit()
-    return "done"
+def delete_blog(id, current_user_id, db: Session = Depends(get_db)):
+    blog = db.query(models.Blog).filter(models.Blog.id == id).first()
+    if blog:
+        if blog.user_id == current_user_id:
+            db.query(models.Blog).filter(models.Blog.id == id).delete(
+                synchronize_session=False
+            )
+            db.commit()
+            return "Deleted succesfully"
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to delete this blog",
+            )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Blog can't be deleted because it doesnt exist",
+        )
 
 
 # Update a blog
-def update_blog(id, request: schemas.Blog, db: Session = Depends(get_db)):
+def update_blog(
+    id: int, current_user_id: int, request: schemas.Blog, db: Session = Depends(get_db)
+):
     blog = db.query(models.Blog).filter(models.Blog.id == id).first()
     if blog:
-        db.query(models.Blog).filter(models.Blog.id == id).update(
-            request.model_dump(), synchronize_session=False
-        )
-        db.commit()
-        return "Updated succesfully"
+        if blog.user_id == current_user_id:
+            db.query(models.Blog).filter(models.Blog.id == id).update(
+                request.model_dump(), synchronize_session=False
+            )
+            db.commit()
+            return "Updated succesfully"
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to update this blog",
+            )
     else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
